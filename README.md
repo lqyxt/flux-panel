@@ -12,7 +12,7 @@
 
 ---
 ## 文档地址
-- [文档地址](https://brunuhville.github.io/flux-panel)
+- [文档地址](https://github.com/lqyxt/flux-panel/tree/main/vitepress)
 ---
 ## 特性
 
