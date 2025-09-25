@@ -24,7 +24,51 @@ fi
 
 
 
-# 根据IPv6支持情况选择docker-compose URL
+# 用户选择 docker-compose 文件来源
+choose_docker_compose_source() {
+  echo "===============================================" >&2
+  echo "          选择 Docker Compose 文件来源" >&2
+  echo "===============================================" >&2
+  echo "请选择 docker-compose.yml 文件来源：" >&2
+  echo "1. 从远程获取（IPv4 版本）" >&2
+  echo "2. 从远程获取（IPv6 版本）" >&2
+  echo "3. 使用本地现有文件" >&2
+  echo "===============================================" >&2
+
+  while true; do
+    read -p "请输入选项 (1-3): " compose_choice
+
+    case $compose_choice in
+      1)
+        echo "📡 选择：远程获取 IPv4 版本" >&2
+        echo "$DOCKER_COMPOSEV4_URL"
+        return 0
+        ;;
+      2)
+        echo "📡 选择：远程获取 IPv6 版本" >&2
+        echo "$DOCKER_COMPOSEV6_URL"
+        return 0
+        ;;
+      3)
+        if [[ -f "docker-compose.yml" ]]; then
+          echo "✅ 选择：使用本地文件" >&2
+          echo "local"
+          return 0
+        else
+          echo "❌ 本地未找到 docker-compose.yml 文件" >&2
+          echo "⏭️ 请选择从远程获取" >&2
+          echo "" >&2
+        fi
+        ;;
+      *)
+        echo "❌ 无效选项，请输入 1-3" >&2
+        echo "" >&2
+        ;;
+    esac
+  done
+}
+
+# 根据IPv6支持情况选择docker-compose URL（保留作为备用）
 get_docker_compose_url() {
   if check_ipv6_support > /dev/null 2>&1; then
     echo "$DOCKER_COMPOSEV6_URL"
@@ -197,10 +241,20 @@ install_panel() {
   get_config_params
 
   echo "🔽 下载必要文件..."
-  DOCKER_COMPOSE_URL=$(get_docker_compose_url)
-  echo "📡 选择配置文件：$(basename "$DOCKER_COMPOSE_URL")"
-  curl -L -o docker-compose.yml "$DOCKER_COMPOSE_URL"
+  DOCKER_COMPOSE_URL=$(choose_docker_compose_source)
 
+  if [[ "$DOCKER_COMPOSE_URL" == "local" ]]; then
+    echo "📋 使用本地文件： docker-compose.yml"
+  else
+    echo "📡 从远程下载配置文件：$(basename "$DOCKER_COMPOSE_URL")"
+    curl -L -o docker-compose.yml "$DOCKER_COMPOSE_URL"
+  fi
+
+  # 如果文件里没有 version 字段，就自动加上
+ if ! grep -q '^version:' docker-compose.yml; then
+   sed -i '1iversion: "2.2"\n' docker-compose.yml
+   echo "✅ 已自动为 docker-compose.yml 添加 version: \"2.2\""
+ fi
   # 检查 gost.sql 是否已存在
   if [[ -f "gost.sql" ]]; then
     echo "⏭️ 跳过下载: gost.sql (使用当前位置的文件)"
@@ -244,10 +298,15 @@ update_panel() {
   check_docker
 
   echo "🔽 下载最新配置文件..."
-  DOCKER_COMPOSE_URL=$(get_docker_compose_url)
-  echo "📡 选择配置文件：$(basename "$DOCKER_COMPOSE_URL")"
-  curl -L -o docker-compose.yml "$DOCKER_COMPOSE_URL"
-  echo "✅ 下载完成"
+  DOCKER_COMPOSE_URL=$(choose_docker_compose_source)
+
+  if [[ "$DOCKER_COMPOSE_URL" == "local" ]]; then
+    echo "📋 使用本地文件： docker-compose.yml"
+  else
+    echo "📡 从远程下载最新配置文件：$(basename "$DOCKER_COMPOSE_URL")"
+    curl -L -o docker-compose.yml "$DOCKER_COMPOSE_URL"
+    echo "✅ 下载完成"
+  fi
 
   # 自动检测并配置 IPv6 支持
   if check_ipv6_support; then
