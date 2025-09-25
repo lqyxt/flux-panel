@@ -16,6 +16,13 @@
 - Stick to dependency versions already locked unless coordinated upgrade (backend via Maven, frontend via package.json, Go via go.mod).
 - Validate scripts and configs on Linux-compatible shells; avoid features unavailable in busybox ash.
 
+## Development Principles
+- Protect existing behaviour; do not sacrifice working features for new requirements—regression checks are mandatory before delivery.
+- Apply KISS: keep implementations straightforward, avoid over-engineering, and prefer clear, maintainable code.
+- Follow SOLID when adding backend components; respect single-responsibility, favour composition, and keep extension points open without modifying core contracts.
+- Honour DRY and reuse shared helpers across backend, frontend, and scripts instead of duplicating logic.
+- If a principle must be relaxed (e.g., for urgent hotfixes), document the rationale and plan to restore compliance.
+
 ## Git Workflow
 - Work in feature branches (`feature/...`, `fix/...`, `chore/...`) branched from `main`; keep `main` release-ready.
 - Use Conventional Commit messages: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:` etc.
@@ -74,3 +81,4 @@
 - Ensure docker images referenced in compose file are available (tagged) before release.
 - Verify install/update scripts against fresh servers (IPv4 and IPv6) when altering provisioning logic.
 - Tag releases on `main` after all checks pass.
+
